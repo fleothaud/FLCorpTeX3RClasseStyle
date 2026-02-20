@@ -1,10 +1,5 @@
 # Changelog
-
-## [3.3.0] - XX
-
-- Ajout du fichier `flashcards-tex3R.sty`
-- Modification du template Année complète
-- Fix de `\montitre` en mode diapo
+## [3.4.0] - 20/02/2026
 - Ajout du package `lastpage`
 - **Refactorisation et documentation du code** (`classe-tex3R.cls` et `style-tex3R.sty`) :
   - En-têtes de fichier décrivant l'architecture et l'ordre d'appel des fonctions
@@ -17,6 +12,14 @@
   - Simplification de `NiveauUtilisateur()` : table Lua `niveaux[arg]` remplaçant 4 `if/elseif`
   - Suppression des `print()` de debug oubliés dans `VerificationVisible()`
   - Suppression du doublon `\colorlet{bleu}` dans `CouleursDocument()`
+
+
+## [3.3.0] - 01/03/24
+
+- Ajout du fichier `flashcards-tex3R.sty`
+- Modification du template Année complète
+- Fix de `\montitre` en mode diapo
+
 
 
 
