@@ -2,7 +2,34 @@
 
 \ProvidesClass{classe-tex3R}[12/02/2024 - Version 3.3.0 de la classe-tex3R]
 
-\LoadClass{scrartcl}%Classe KOMA-SCRIPT
+% ============================================================
+% classe-tex3R.cls — Classe LuaLaTeX pour documents pédagogiques
+%
+% Prérequis : compilation LuaLaTeX obligatoire.
+% Basée sur KOMA-Script (scrartcl) + style-tex3R.sty pour les valeurs
+% par défaut.
+%
+% Point d'entrée utilisateur : \parametrage{} (ou \AtEndPreamble
+% automatique).  Cette commande appelle ParametrageDocument() qui
+% orchestre toutes les fonctions de configuration dans l'ordre suivant :
+%
+%   1. Police      : PoliceUtilisateur → PoliceDocument
+%   2. Page        : FormatUtilisateur → FormatDocument
+%   3. Couleurs    : CouleursUtilisateur → CouleursDocument
+%   4. Logos       : LogosUtilisateur → LogosDocument
+%   5. Booléens    : BooleensDocument
+%   6. Styles/Titres : StylesTitresUtilisateur → StylesTitresDocument
+%                      TitresUtilisateur → TitresDocument
+%   7. Environnements : EnvironnementsUtilisateur → EnvironnementsDocument
+%   8. Titre       : TitreLua
+%
+% Variables Lua globales disponibles avant \parametrage{} :
+%   Type, Format, Niveau, Chapitre, Numero, Compteur, Taille,
+%   Impression, Header, Correction, Enonce, Visible,
+%   Bareme, Competence, Difficulte, Source, Theme, Stretch
+% ============================================================
+
+\LoadClass{scrartcl}% Classe KOMA-Script
 \PassOptionsToPackage{table,svgnames}{xcolor}
 
 \RequirePackage{iftex}
@@ -13,16 +40,21 @@
 \fi
 
 \begin{luacode*}
-  PARAMETRES = {}
-  PAGE = {}
-  POLICE = {}
-  COULEURS = {}
-  LOGOS = {}
-  STYLESTITRES = {}
-  TITRES = {}
-  ENVIRONNEMENTS = {}
-  PARAMETRES.premier = true
-  PARAMETRES.format = 'fiche'
+  -- Tables Lua globales partagées entre classe-tex3R.cls et style-tex3R.sty.
+  -- Chaque table regroupe les paramètres d'un domaine fonctionnel.
+  -- Elles sont peuplées par les fonctions "Utilisateur" (style-tex3R.sty)
+  -- puis lues par les fonctions "Document" (classe-tex3R.cls).
+  PARAMETRES   = {}   -- options globales du document (type, format, flags…)
+  PAGE         = {}   -- dimensions, marges, styles des sections et listes
+  POLICE       = {}   -- polices texte/maths, tailles, interligne tableau
+  COULEURS     = {}   -- palette de couleurs (écran vs impression)
+  LOGOS        = {}   -- icônes FontAwesome par type de document
+  STYLESTITRES = {}   -- variantes de titre (sans, un, deux, trois)
+  TITRES       = {}   -- texte du titre et entrées TOC par type
+  ENVIRONNEMENTS = {} -- code LaTeX des boîtes de cours et exercices
+
+  PARAMETRES.premier = true    -- true uniquement au tout premier \parametrage{}
+  PARAMETRES.format  = 'fiche' -- valeur par défaut si Format n'est pas défini
 \end{luacode*}
 
 %Formatage de la page et du texte
@@ -125,23 +157,30 @@
 
 \begin{luacode*}
 
+  -- FormatageString(str) — Nettoie une chaîne multi-lignes stockée dans une
+  --   table Lua (supprime sauts de ligne et espaces en début/fin) avant de
+  --   l'injecter dans du code LaTeX via tex.sprint().
   function FormatageString(string)
-  -- local newString = ''
-  if string ~= nil then
-    newString = string.gsub(string, "\n", "")
-    newString = string.gsub(newString, "^%s+", "")
-    newString = string.gsub(newString, "%s+$", "")
-  end
+    if string ~= nil then
+      newString = string.gsub(string, "\n", "")
+      newString = string.gsub(newString, "^%s+", "")
+      newString = string.gsub(newString, "%s+$", "")
+    end
     return newString
   end
 
+  -- RestoreHeader() — Réactive le booléen LaTeX \ifheader si le paramètre
+  --   header est vrai.  Utilisé lors du chargement d'un sous-fichier (subfile).
   function RestoreHeader()
     if PARAMETRES.header then
-    tex.sprint('\\headertrue')
+      tex.sprint('\\headertrue')
     end
   end
 
---Formatage de la page d'après les paramètres utilisateurs
+  -- FormatDocument() — Génère le code LaTeX de mise en page à partir des
+  --   valeurs stockées dans PAGE et PARAMETRES.
+  --   Appelée par ParametrageDocument() à chaque \parametrage{}.
+  --   Les blocs conditionnels "if PREMIER" ne s'exécutent qu'une seule fois.
   function FormatDocument()
 
     local HEADER = PARAMETRES.header
@@ -176,26 +215,39 @@
 
     if PREMIER then
 
+      -- 1) Espacement du texte
       tex.sprint(
-        '\\setlength{\\parindent}{' ..  FormatageString(PAGE.parindent) ..'}' ..
-        '\\setlength{\\parskip}{' ..  FormatageString(PAGE.parskip) ..'}' ..
-        '\\frenchbsetup{ItemLabeli=' ..  FormatageString(PAGE.itemi) .. '}' ..
-        '\\frenchbsetup{ItemLabelii=' ..  FormatageString(PAGE.itemii) ..'}' ..
-        '\\setlist[enumerate,1]{label=' ..  FormatageString(PAGE.enumi) .. '}' ..
-        '\\setlist[enumerate,2]{label=' ..  FormatageString(PAGE.enumii) .. '}' ..
-        '\\DeclareInstance{tasks}{enumerate}{default}{label =' ..  FormatageString(PAGE.enumi) .. ',label-width=1.125em}' ..
-        '\\DeclareInstance{tasks}{itemize}{default}{label = ' ..  FormatageString(PAGE.itemi) .. ',label-width=1.125em}' ..
-        '\\renewcommand{\\stylesections}[3]{' .. FormatageString(PAGE.stylesections) .. '}' ..
-        '\\renewcommand*{\\sectionformat}{' ..  FormatageString(PAGE.sectionnumber) .. '}' ..
-        '\\renewcommand*{\\subsectionformat}{' ..  FormatageString(PAGE.subsectionnumber) .. '}' ..
-        '\\renewcommand*{\\subsubsectionformat}{' ..  FormatageString(PAGE.subsubsectionnumber) .. '}' ..
-        '\\setkomafont{section}{' ..  FormatageString(PAGE.sectionname) .. '}' ..
-        '\\setkomafont{subsection}{' ..  FormatageString(PAGE.subsectionname) .. '}' ..
-        '\\setkomafont{subsubsection}{' ..  FormatageString(PAGE.subsubsectionname) .. '}' ..
-        '\\renewcommand*{\\sectionlinesformat}[4]{' ..  FormatageString(PAGE.sectionsformat) .. '}' ..
-        '\\renewcommand*\\partlineswithprefixformat[3]{\\thispagestyle{empty}'.. FormatageString(PAGE.partformat) .. '}' ..
-        '\\renewcommand{\\formatchapitrenormal}{' .. FormatageString(PAGE.chapitrenormalformat) .. '}' ..
-        '\\renewcommand{\\formatchapitreetoile}{' .. FormatageString(PAGE.chapitreetoileformat) .. '}'
+        '\\setlength{\\parindent}{' .. FormatageString(PAGE.parindent) .. '}' ..
+        '\\setlength{\\parskip}{'   .. FormatageString(PAGE.parskip)   .. '}'
+      )
+
+      -- 2) Labels des listes (itemize, enumerate, tasks)
+      tex.sprint(
+        '\\frenchbsetup{ItemLabeli='  .. FormatageString(PAGE.itemi)  .. '}' ..
+        '\\frenchbsetup{ItemLabelii=' .. FormatageString(PAGE.itemii) .. '}' ..
+        '\\setlist[enumerate,1]{label=' .. FormatageString(PAGE.enumi)  .. '}' ..
+        '\\setlist[enumerate,2]{label=' .. FormatageString(PAGE.enumii) .. '}' ..
+        '\\DeclareInstance{tasks}{enumerate}{default}{label =' .. FormatageString(PAGE.enumi)  .. ',label-width=1.125em}' ..
+        '\\DeclareInstance{tasks}{itemize}{default}{label = '  .. FormatageString(PAGE.itemi)  .. ',label-width=1.125em}'
+      )
+
+      -- 3) Style des titres de sections (couleur, numérotation)
+      tex.sprint(
+        '\\renewcommand{\\stylesections}[3]{'      .. FormatageString(PAGE.stylesections)       .. '}' ..
+        '\\renewcommand*{\\sectionformat}{'        .. FormatageString(PAGE.sectionnumber)        .. '}' ..
+        '\\renewcommand*{\\subsectionformat}{'     .. FormatageString(PAGE.subsectionnumber)     .. '}' ..
+        '\\renewcommand*{\\subsubsectionformat}{'  .. FormatageString(PAGE.subsubsectionnumber)  .. '}' ..
+        '\\setkomafont{section}{'                  .. FormatageString(PAGE.sectionname)          .. '}' ..
+        '\\setkomafont{subsection}{'               .. FormatageString(PAGE.subsectionname)       .. '}' ..
+        '\\setkomafont{subsubsection}{'            .. FormatageString(PAGE.subsubsectionname)    .. '}'
+      )
+
+      -- 4) Format des parties et chapitres (page de garde, \part)
+      tex.sprint(
+        '\\renewcommand*{\\sectionlinesformat}[4]{'                             .. FormatageString(PAGE.sectionsformat)        .. '}' ..
+        '\\renewcommand*\\partlineswithprefixformat[3]{\\thispagestyle{empty}'  .. FormatageString(PAGE.partformat)            .. '}' ..
+        '\\renewcommand{\\formatchapitrenormal}{'                               .. FormatageString(PAGE.chapitrenormalformat)  .. '}' ..
+        '\\renewcommand{\\formatchapitreetoile}{'                               .. FormatageString(PAGE.chapitreetoileformat)  .. '}'
       )
 
       if FORMAT =='fiche' then
@@ -312,6 +364,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{luacode*}
+-- BooleensDocument() — Réinitialise tous les booléens LaTeX à false, puis
+--   active ceux qui correspondent aux options courantes de PARAMETRES.
+--   Doit être appelé après chaque mise à jour de PARAMETRES.
 function BooleensDocument()
   local bool =[[
     \activitefalse
@@ -420,6 +475,10 @@ end
 %Commandes de mise en page
 
 \begin{luacode*}
+  -- TailleTexteLua(n) — Traduit un entier relatif en commande de taille LaTeX.
+  --   -4=\tiny, -3=\scriptsize, -2=\footnotesize, -1=\small,
+  --    0=\normalsize, 1=\large, 2=\Large, 3=\LARGE, 4=\huge
+  --   Utilisé par \tailletexte{n}.
   function TailleTexteLua(nombre)
     if nombre == -4 then
       tex.sprint('\\tiny')
@@ -442,6 +501,9 @@ end
     end
   end
 
+  -- SautLua(str) — Génère un saut de page conditionnel selon le mode.
+  --   'ligne' → saut d'une ligne, 'fiche' → newpage si mode fiche,
+  --   'diapo' → newpage si mode diapo.  Utilisé par \saut{…}.
   function SautLua(arg)
     if arg == 'ligne' then
       tex.sprint('\\sautligne')
@@ -490,6 +552,7 @@ end
 \newcommand{\Che}{Chercher}
 
 \begin{luacode}
+  -- DifficulteLua(n) — Affiche n étoiles FontAwesome pour indiquer la difficulté.
   function DifficulteLua(nombre)
     if nombre then
       for i=1,nombre do
@@ -498,12 +561,17 @@ end
     end
   end
 
+  -- ChapitreLua(n) — Fixe le compteur LaTeX "part" à n (numéro du chapitre).
+  --   N'a d'effet que si n est une valeur non-nil non-vide.
   function ChapitreLua(nombre)
     if nombre ~= nil and nombre ~= ''  then
       tex.sprint('\\setcounter{part}{' .. nombre ..'}')
     end
   end
 
+  -- NiveauDocument(str) — Si str est non-nil, force "contenuniveau" à str
+  --   et désactive "niveaucustomtrue".  Si str est nil, active "niveaucustomtrue"
+  --   pour que l'utilisateur puisse définir "contenuniveau" lui-même.
   function NiveauDocument(str)
     if str then
       tex.sprint('\\niveaucustomfalse')
@@ -513,6 +581,8 @@ end
     end
   end
   
+  -- BaremeLua(n) — Initialise "contenubareme" à la valeur numérique n
+  --   (formatée avec numprint) ou à "?" si n est nil.
   function BaremeLua(arg)
     if arg then
       tex.sprint('\\renewcommand{\\contenubareme}{\\np{' .. arg .. '}}')      
@@ -659,38 +729,49 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{luacode}
+  -- CouleursDocument() — Génère les commandes colorlet LaTeX à partir de la table
+  --   COULEURS peuplée par CouleursUtilisateur().  Appelée à chaque
+  --   appel de "parametrage" (les couleurs peuvent changer entre subfiles).
   function CouleursDocument()
 
     local PREMIER = PARAMETRES.premier
 
+    -- Lignes, sections et arrière-plan
     tex.sprint(
-      '\\colorlet{couleurligne}{' ..  FormatageString(COULEURS.ligne) .. '}' ..
-      '\\colorlet{couleurinterligne}{' ..  FormatageString(COULEURS.interligne) .. '}' ..
-      '\\colorlet{couleursection}{' ..  FormatageString(COULEURS.section) .. '}' ..
-      '\\colorlet{couleursubsection}{' ..  FormatageString(COULEURS.subsection) .. '}' ..
-      '\\colorlet{couleursubsubsection}{' ..  FormatageString(COULEURS.subsubsection) .. '}' ..
-      '\\colorlet{couleurcarreau}{' ..  FormatageString(COULEURS.carreau) .. '}' ..
-      '\\colorlet{couleursurlignelignea}{' ..  FormatageString(COULEURS.surlignelignea) .. '}' ..
-      '\\colorlet{couleursurligneligneb}{' ..  FormatageString(COULEURS.surligneligneb) .. '}' ..
-      '\\colorlet{couleurboitecours}{' ..  FormatageString(COULEURS.boitecours) .. '}' ..
-      '\\colorlet{couleurbackground}{' ..  FormatageString(COULEURS.background) .. '}' ..
-      '\\colorlet{couleurapplication}{' ..  FormatageString(COULEURS.application) .. '}' ..
-      '\\colorlet{couleurdefinition}{' ..  FormatageString(COULEURS.definition) .. '}' ..
-      '\\colorlet{couleurconvention}{' ..  FormatageString(COULEURS.convention) .. '}' ..
-      '\\colorlet{couleurexercice}{' ..  FormatageString(COULEURS.exercice) .. '}' ..
-      '\\colorlet{couleurexemple}{' ..  FormatageString(COULEURS.exemple) .. '}' ..
-      '\\colorlet{couleurmethode}{' ..  FormatageString(COULEURS.methode) .. '}' ..
-      '\\colorlet{couleurpreuve}{' ..  FormatageString(COULEURS.preuve) .. '}' ..
-      '\\colorlet{couleurpropriete}{' ..  FormatageString(COULEURS.propriete) .. '}' ..
-      '\\colorlet{couleurremarque}{' ..  FormatageString(COULEURS.remarque) .. '}' ..
-      '\\colorlet{couleurenonce}{' ..  FormatageString(COULEURS.enonce) .. '}' ..
-      '\\colorlet{couleurcorrection}{' ..  FormatageString(COULEURS.correction) .. '}' ..
-      '\\colorlet{couleursurligne}{' ..  FormatageString(COULEURS.surligne) .. '}' ..
-      '\\colorlet{couleursurlignevisible}{' ..  FormatageString(COULEURS.surlignevisible) .. '}' ..
-      '\\colorlet{bleu}{' ..  FormatageString(COULEURS.bleu) .. '}' ..
-      '\\colorlet{rouge}{' ..  FormatageString(COULEURS.rouge) .. '}' ..
-      '\\colorlet{vert}{' ..  FormatageString(COULEURS.vert) .. '}' ..
-      '\\colorlet{bleu}{' ..  FormatageString(COULEURS.bleu) .. '}'
+      '\\colorlet{couleurligne}{'         .. FormatageString(COULEURS.ligne)         .. '}' ..
+      '\\colorlet{couleurinterligne}{'     .. FormatageString(COULEURS.interligne)    .. '}' ..
+      '\\colorlet{couleursection}{'        .. FormatageString(COULEURS.section)       .. '}' ..
+      '\\colorlet{couleursubsection}{'     .. FormatageString(COULEURS.subsection)    .. '}' ..
+      '\\colorlet{couleursubsubsection}{'  .. FormatageString(COULEURS.subsubsection) .. '}' ..
+      '\\colorlet{couleurcarreau}{'        .. FormatageString(COULEURS.carreau)       .. '}' ..
+      '\\colorlet{couleursurlignelignea}{' .. FormatageString(COULEURS.surlignelignea).. '}' ..
+      '\\colorlet{couleursurligneligneb}{' .. FormatageString(COULEURS.surligneligneb).. '}' ..
+      '\\colorlet{couleurboitecours}{'     .. FormatageString(COULEURS.boitecours)    .. '}' ..
+      '\\colorlet{couleurbackground}{'     .. FormatageString(COULEURS.background)    .. '}'
+    )
+
+    -- Couleurs des environnements de cours et d'exercices
+    tex.sprint(
+      '\\colorlet{couleurapplication}{' .. FormatageString(COULEURS.application) .. '}' ..
+      '\\colorlet{couleurdefinition}{'  .. FormatageString(COULEURS.definition)  .. '}' ..
+      '\\colorlet{couleurconvention}{'  .. FormatageString(COULEURS.convention)  .. '}' ..
+      '\\colorlet{couleurexercice}{'    .. FormatageString(COULEURS.exercice)    .. '}' ..
+      '\\colorlet{couleurexemple}{'     .. FormatageString(COULEURS.exemple)     .. '}' ..
+      '\\colorlet{couleurmethode}{'     .. FormatageString(COULEURS.methode)     .. '}' ..
+      '\\colorlet{couleurpreuve}{'      .. FormatageString(COULEURS.preuve)      .. '}' ..
+      '\\colorlet{couleurpropriete}{'   .. FormatageString(COULEURS.propriete)   .. '}' ..
+      '\\colorlet{couleurremarque}{'    .. FormatageString(COULEURS.remarque)    .. '}' ..
+      '\\colorlet{couleurenonce}{'      .. FormatageString(COULEURS.enonce)      .. '}' ..
+      '\\colorlet{couleurcorrection}{'  .. FormatageString(COULEURS.correction)  .. '}'
+    )
+
+    -- Surlignage et couleurs sémantiques (rouge, bleu, vert)
+    tex.sprint(
+      '\\colorlet{couleursurligne}{'       .. FormatageString(COULEURS.surligne)       .. '}' ..
+      '\\colorlet{couleursurlignevisible}{' .. FormatageString(COULEURS.surlignevisible).. '}' ..
+      '\\colorlet{rouge}{'                 .. FormatageString(COULEURS.rouge)          .. '}' ..
+      '\\colorlet{bleu}{'                  .. FormatageString(COULEURS.bleu)           .. '}' ..
+      '\\colorlet{vert}{'                  .. FormatageString(COULEURS.vert)           .. '}'
     )
 
     tex.sprint('\\sethlcolor{couleursurligne}')
@@ -704,6 +785,9 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{luacode}
+  -- PoliceDocument() — Applique la taille de police et les polices texte/maths
+  --   à partir de POLICE et PARAMETRES.  La taille de police utilise
+  --   KOMAoption{fontsize} pour fonctionner avec scrartcl.
   function PoliceDocument()
     local TAILLE = PARAMETRES.taille
     local FORMAT = PARAMETRES.format
@@ -740,6 +824,8 @@ end
 \newcommand{\logoactif}{}
 
 \begin{luacode}
+  -- LogosDocument() — Sélectionne l'icône (commande "logoactif") correspondant
+  --   au type de document courant dans la table LOGOS.
   function LogosDocument()
 
     local TYPE = PARAMETRES.type
@@ -780,6 +866,9 @@ end
 \newcommand{\montitre}[2][\hspace{-0.25em}]{\renewcommand{\logoactif}{#1}\ifheader\ihead{\vspace*{-1em}\titre{#2}}\else\titre{#2}\fi}
 
 \begin{luacode}
+  -- StylesTitresDocument() — Définit les commandes "titre" et "styleactif" en
+  --   fonction du type de document et de la présence d'un header.
+  --   La commande "titre" génère l'espacement après le titre en mode sans-header.
   function StylesTitresDocument()
 
     local TYPE = PARAMETRES.type
@@ -819,6 +908,8 @@ end
 \newif\iftitretoc
 
 \begin{luacode}
+  -- TitresDocument() — Fixe "motcletitretoc" (entrée TOC) et "titreactif"
+  --   (titre affiché ou dans le header) pour le type de document courant.
   function TitresDocument()
     local TYPE = PARAMETRES.type
     local PREMIER = PARAMETRES.premier
@@ -864,6 +955,9 @@ end
 
 \begin{luacode}
 
+-- VerificationVisible(flag) — Compare flag à PARAMETRES.visible pour décider
+--   si l'environnement "visible" doit afficher son contenu (montretrue/false).
+--   flag est la valeur optionnelle de l'environnement (true par défaut).
 function VerificationVisible(flag)
   local VISIBLE = PARAMETRES.visible
   local str = tostring(VISIBLE)
@@ -875,8 +969,6 @@ function VerificationVisible(flag)
     tex.sprint('\\visiblefalse')
   end
 
-  print('MESSAGE')
-  print(str)
   if flg == str then
     tex.sprint('\\montretrue')
   else
@@ -919,6 +1011,11 @@ end
 \NewEnviron{enonce}[1][]{\BODY}
 
 \begin{luacode*}
+  -- EnvironnementsDocument() — Redéfinit les environnements LaTeX
+  --   (application, definition, propriete… enonce, correction) en injectant
+  --   le code stocké dans ENVIRONNEMENTS.  Le bloc "PREMIER" concerne les
+  --   boîtes de cours (communes à tous les types).  La logique enonce/correction
+  --   diffère selon que le type est 'cours' ou un type exercices.
   function EnvironnementsDocument()
 
     local PREMIER = PARAMETRES.premier
@@ -946,9 +1043,36 @@ end
 
       else
 
-        tex.sprint('\\RenewEnviron{enonce}[1][\\thecompteurexercice]{\\stepcounter{compteurexercice}\\phantomsection\\addcontentsline{toc}{subsection}{'..  FormatageString(ENVIRONNEMENTS.tocexercice) ..'~\\thecompteurexercice}\\ifenonce\\phantomsection\\addcontentsline{toc}{subsubsection}{'..  FormatageString(ENVIRONNEMENTS.tocenonce) ..'}\\ifstretch\\vfill\\fi' ..  FormatageString(ENVIRONNEMENTS.enonce) .. '\\fi\\bareme{}\\competence{}\\difficulte{}\\source{}\\theme{}}')
+        -- Environnement enonce pour les types exercices
+        -- (TD, DM, DS, interro, activite, bilan…)
+        local tocexo    = FormatageString(ENVIRONNEMENTS.tocexercice)
+        local tocenonce = FormatageString(ENVIRONNEMENTS.tocenonce)
+        local fmtenonce = FormatageString(ENVIRONNEMENTS.enonce)
+        tex.sprint(
+          '\\RenewEnviron{enonce}[1][\\thecompteurexercice]{' ..
+            '\\stepcounter{compteurexercice}' ..
+            '\\phantomsection\\addcontentsline{toc}{subsection}{' .. tocexo .. '~\\thecompteurexercice}' ..
+            '\\ifenonce' ..
+              '\\phantomsection\\addcontentsline{toc}{subsubsection}{' .. tocenonce .. '}' ..
+              '\\ifstretch\\vfill\\fi' ..
+              fmtenonce ..
+            '\\fi' ..
+            '\\bareme{}\\competence{}\\difficulte{}\\source{}\\theme{}' ..
+          '}'
+        )
 
-        tex.sprint('\\RenewEnviron{correction}[1][]{\\ifcorrection\\phantomsection\\addcontentsline{toc}{subsubsection}{' ..  FormatageString(ENVIRONNEMENTS.toccorrection) .. '}\\ifstretch\\vfill\\fi' ..  FormatageString(ENVIRONNEMENTS.correction) .. '\\fi}')
+        -- Environnement correction pour les types exercices
+        local toccorr = FormatageString(ENVIRONNEMENTS.toccorrection)
+        local fmtcorr = FormatageString(ENVIRONNEMENTS.correction)
+        tex.sprint(
+          '\\RenewEnviron{correction}[1][]{' ..
+            '\\ifcorrection' ..
+              '\\phantomsection\\addcontentsline{toc}{subsubsection}{' .. toccorr .. '}' ..
+              '\\ifstretch\\vfill\\fi' ..
+              fmtcorr ..
+            '\\fi' ..
+          '}'
+        )
 
       end
   end
@@ -956,6 +1080,10 @@ end
 
 \begin{luacode*}
 
+  -- TitreLua() — Déclenche l'affichage du titre actif (\titreactif) et
+  --   l'ajout de l'entrée dans la TOC.  En mode PREMIER (premier appel),
+  --   le titre est différé à \AtBeginDocument pour que toutes les polices
+  --   soient chargées.  Met PARAMETRES.premier à false en fin d'exécution.
   function TitreLua()
     local HEADER = PARAMETRES.header
     local PREMIER = PARAMETRES.premier
@@ -995,147 +1123,78 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{luacode*}
+  -- ParametrageDocument() — Point d'entrée central appelé par \parametrage{}.
+  --   Lit les variables globales Lua (Type, Format, Niveau…) définies par
+  --   l'utilisateur, les transfère dans PARAMETRES, puis orchestre dans
+  --   l'ordre toutes les fonctions de configuration.
+  --   En fin de fonction, les variables globales sont remises à nil pour
+  --   éviter toute pollution entre deux appels de \parametrage{}.
   function ParametrageDocument()
 
-    if Format == 'diapo' then
-      PARAMETRES.format = 'diapo'
-    else 
-      PARAMETRES.format = 'fiche'
+    -- Raccourci local : retourne val si non-nil, sinon la valeur par défaut def.
+    -- Évite le pattern répétitif "if X == nil then ... else ... end".
+    local function defaut(val, def)
+      if val == nil then return def else return val end
     end
 
-    if Chapitre then
-      PARAMETRES.chapitre = Chapitre
-    else 
-      PARAMETRES.chapitre = ''
-    end
+    -- Format du document
+    PARAMETRES.format = (Format == 'diapo') and 'diapo' or 'fiche'
 
-    if Numero then
-      PARAMETRES.numero = Numero
-    else 
-      PARAMETRES.numero = ''
-    end
+    -- Informations pédagogiques (chaînes vides si non fournies)
+    PARAMETRES.chapitre = defaut(Chapitre, '')
+    PARAMETRES.numero   = defaut(Numero,   '')
+    PARAMETRES.niveau   = defaut(Niveau,   '')
+    PARAMETRES.compteur = defaut(Compteur, '1')
+    PARAMETRES.type     = defaut(Type,     'basique')
 
-    if Niveau then
-      PARAMETRES.niveau = Niveau
-    else 
-      PARAMETRES.niveau = ''
-    end
+    -- Options de rendu
+    PARAMETRES.print  = defaut(Impression, false)
+    PARAMETRES.header = defaut(Header,     false)
+    PARAMETRES.taille = Taille  -- nil = taille automatique selon le format
 
-    if Compteur then
-      PARAMETRES.compteur = Compteur
-    else 
-      PARAMETRES.compteur = '1'
-    end
+    -- Options d'affichage du contenu
+    PARAMETRES.correction = defaut(Correction, false)
+    PARAMETRES.enonce     = defaut(Enonce,     false)
+    PARAMETRES.visible    = defaut(Visible,    false)
 
-    if Type == nil then
-      PARAMETRES.type = 'basique'
-    else
-      PARAMETRES.type = Type
-    end
+    -- Options des exercices (métadonnées affichées dans l'énoncé)
+    PARAMETRES.bareme     = defaut(Bareme,     false)
+    PARAMETRES.competence = defaut(Competence, false)
+    PARAMETRES.difficulte = defaut(Difficulte, false)
+    PARAMETRES.source     = defaut(Source,     false)
+    PARAMETRES.theme      = defaut(Theme,      false)
+    PARAMETRES.stretch    = defaut(Stretch,    false)
 
-    if Impression == nil then
-    PARAMETRES.print = false
-    else
-    PARAMETRES.print = Impression
-    end 
+    -- Configuration dans l'ordre imposé (ne pas modifier l'ordre)
+    PoliceUtilisateur()    -- peuple POLICE
+    PoliceDocument()       -- applique la police
 
-    if Header == nil then
-    PARAMETRES.header = false
-    else
-    PARAMETRES.header = Header
-    end 
+    FormatUtilisateur()    -- peuple PAGE
+    FormatDocument()       -- applique la mise en page
 
-    PARAMETRES.taille = Taille
+    CouleursUtilisateur()  -- peuple COULEURS
+    CouleursDocument()     -- applique les couleurs
 
-    if Correction == nil then
-    PARAMETRES.correction = false
-    else
-    PARAMETRES.correction = Correction
-    end 
+    LogosUtilisateur()     -- peuple LOGOS
+    LogosDocument()        -- sélectionne \logoactif
 
-    if Enonce == nil then
-    PARAMETRES.enonce = false
-    else
-    PARAMETRES.enonce = Enonce
-    end 
+    BooleensDocument()     -- synchronise les \if... LaTeX
 
-    if Visible == nil then
-    PARAMETRES.visible = false
-    else
-    PARAMETRES.visible = Visible
-    end 
+    StylesTitresUtilisateur() -- peuple STYLESTITRES
+    StylesTitresDocument()    -- définit \titre et \styleactif
+    TitresUtilisateur()       -- peuple TITRES
+    TitresDocument()          -- définit \motcletitretoc et \titreactif
+    EnvironnementsUtilisateur() -- peuple ENVIRONNEMENTS
+    EnvironnementsDocument()    -- redéfinit les environnements LaTeX
+    TitreLua()                  -- émet le titre (ou le diffère à \AtBeginDocument)
 
-    if Bareme == nil then
-    PARAMETRES.bareme = false
-    else
-    PARAMETRES.bareme = Bareme
-    end 
-
-    if Competence == nil then
-    PARAMETRES.competence = false
-    else
-    PARAMETRES.competence = Competence
-    end 
-
-    if Difficulte == nil then
-    PARAMETRES.difficulte = false
-    else
-    PARAMETRES.difficulte = Difficulte
-    end 
-
-    if Source == nil then
-    PARAMETRES.source = false
-    else
-    PARAMETRES.source = Source
-    end 
-
-    if Theme == nil then
-    PARAMETRES.theme = false
-    else
-    PARAMETRES.theme = Theme
-    end 
-
-    if Stretch == nil then
-    PARAMETRES.stretch = false
-    else
-    PARAMETRES.stretch = Stretch
-    end 
-
-    PoliceUtilisateur()
-    PoliceDocument()
-
-    FormatUtilisateur()
-    FormatDocument()
-
-    CouleursUtilisateur()
-    CouleursDocument()
-
-    LogosUtilisateur()
-    LogosDocument()
-
-    BooleensDocument()
-
-    StylesTitresUtilisateur()
-    StylesTitresDocument()
-    TitresUtilisateur()
-    TitresDocument()
-    EnvironnementsUtilisateur()
-    EnvironnementsDocument()
-    TitreLua()
-
-    Type = nil
-    Impression = nil
-    Header = nil
-    Taille = nil
-    Correction = nil
-    Enonce = nil
-    Visible = nil
-    Competence = nil
-    Bareme = nil
-    Difficulte = nil
-    Source = nil
-    Theme = nil
-    Stretch = nil
+    -- Réinitialisation des variables globales Lua (évite la pollution entre appels)
+    Type = nil; Format = nil; Chapitre = nil; Numero = nil
+    Niveau = nil; Compteur = nil; Taille = nil
+    Impression = nil; Header = nil
+    Correction = nil; Enonce = nil; Visible = nil
+    Bareme = nil; Competence = nil; Difficulte = nil
+    Source = nil; Theme = nil; Stretch = nil
   end
 \end{luacode*}
 

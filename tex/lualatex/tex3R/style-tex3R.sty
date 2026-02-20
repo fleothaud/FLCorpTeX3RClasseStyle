@@ -1,11 +1,30 @@
 \NeedsTeXFormat{LaTeX2e}[2022-11-01]
 \ProvidesPackage{style-tex3R}
 
+% ============================================================
+% style-tex3R.sty — Feuille de style PAR DÉFAUT pour classe-tex3R
+%
+% Ce fichier peuple les tables Lua globales (PAGE, POLICE, COULEURS,
+% LOGOS, STYLESTITRES, TITRES, ENVIRONNEMENTS) avec les valeurs par
+% défaut.  Il est chargé automatiquement par classe-tex3R.cls.
+%
+% Pour personnaliser : redéfinir les fonctions "Utilisateur" dans un
+% fichier de style propre chargé après ce package.
+%
+% Chaque paire de fonctions suit le même schéma :
+%   - XxxUtilisateur() : peuple la table Lua (appelé dans style-tex3R)
+%   - XxxDocument()    : génère le code LaTeX (appelé dans classe-tex3R)
+% ============================================================
+
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FORMAT DE LA PAGE %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
-%#1 = couleur ; #2 = type de section
+% FormatUtilisateur() — Dimensions de la page, marges, styles des listes
+%   et des sections.  Les champs "si PREMIER" ne sont initialisés qu'au
+%   premier appel de \parametrage{} (premier document ou premier subfile).
+%   Les champs de marges sont recalculés à chaque appel (permettant de
+%   changer le format en cours de document).
 
 \begin{luacode*}
   function FormatUtilisateur()
@@ -130,6 +149,12 @@
 %%% FORMATAGES DIVERS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
+% PoliceUtilisateur() — Tailles de police par défaut (fiche / diapo),
+%   interligne des tableaux, polices texte et maths.
+%   Toutes les valeurs sont des chaînes passées directement à fontspec /
+%   unicode-math, donc les noms de polices doivent être reconnus par le
+%   système.
+
 \begin{luacode*}
   function PoliceUtilisateur()
 
@@ -153,6 +178,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DÉFINITION DES COULEURS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% CouleursUtilisateur() — Palette de couleurs selon le mode d'impression.
+%   Mode impression (PRINT = true) : tout en nuances de gris (noir/blanc).
+%   Mode écran    (PRINT = false) : couleurs vives par défaut.
+%   Les noms de couleurs sont ceux de xcolor (svgnames activé).
 
 \begin{luacode}
   function CouleursUtilisateur()
@@ -226,6 +256,10 @@
 %%% CHOIX DES LOGOS %%%
 %%%%%%%%%%%%%%%%%%%%%%%
 
+% LogosUtilisateur() — Icône FontAwesome affichée à gauche du titre selon
+%   le type de document.  Remplacer par n'importe quelle commande LaTeX
+%   inline (ex. \faCalculator, une image, du texte…).
+
 \begin{luacode*}
   function LogosUtilisateur()
 
@@ -253,6 +287,13 @@
 %%% REDÉFINITION DES TITRES %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% StylesTitresUtilisateur() — Définit trois variantes de titre ('sans',
+%   'un', 'deux', 'trois') puis associe chaque type de document à l'une
+%   d'elles.  Modifier ici pour changer la structure du bandeau de titre.
+%
+% TitresUtilisateur() — Fournit le texte affiché dans le titre et dans la
+%   table des matières (TOC) pour chaque type de document.
+
 \begin{luacode*}
   function StylesTitresUtilisateur()
 
@@ -268,33 +309,19 @@
       STYLESTITRES['deux'] = [[ \titre{#1~\mdseries|~\contenuchapitre\hfill\large\contenuniveau} ]]
       STYLESTITRES['trois'] = [[ \titre{#1~\mdseries|~{\large\mdseries NOM :} \hfill {\large\mdseries Prénom :} \hfill \mdseries\large\contenuniveau} ]]
 
-      if FORMAT == "fiche" then    
-
+      -- Association type → variante de titre.
+      -- Identique en mode fiche et diapo : adapter ici si les deux modes
+      -- doivent diverger (ex. diapo sans champ "niveau").
       STYLESTITRES.activite = STYLESTITRES['un']
-      STYLESTITRES.basique = STYLESTITRES['sans']
-      STYLESTITRES.bilan = STYLESTITRES['un']
-      STYLESTITRES.corrige = STYLESTITRES['deux']
-      STYLESTITRES.cours = STYLESTITRES['deux']
-      STYLESTITRES.DM = STYLESTITRES['trois']
-      STYLESTITRES.DS = STYLESTITRES['trois']
-      STYLESTITRES.flash = STYLESTITRES['un']
-      STYLESTITRES.interro = STYLESTITRES['trois']
-      STYLESTITRES.TD = STYLESTITRES['deux']
-
-      elseif FORMAT == "diapo" then
-
-      STYLESTITRES.activite = STYLESTITRES['un']
-      STYLESTITRES.basique = STYLESTITRES['sans']
-      STYLESTITRES.bilan = STYLESTITRES['un']
-      STYLESTITRES.corrige = STYLESTITRES['deux']
-      STYLESTITRES.cours = STYLESTITRES['deux']
-      STYLESTITRES.DM = STYLESTITRES['trois']
-      STYLESTITRES.DS = STYLESTITRES['trois']
-      STYLESTITRES.flash = STYLESTITRES['un']
-      STYLESTITRES.interro = STYLESTITRES['trois']
-      STYLESTITRES.TD = STYLESTITRES['deux']
-
-      end
+      STYLESTITRES.basique  = STYLESTITRES['sans']
+      STYLESTITRES.bilan    = STYLESTITRES['un']
+      STYLESTITRES.corrige  = STYLESTITRES['deux']
+      STYLESTITRES.cours    = STYLESTITRES['deux']
+      STYLESTITRES.DM       = STYLESTITRES['trois']
+      STYLESTITRES.DS       = STYLESTITRES['trois']
+      STYLESTITRES.flash    = STYLESTITRES['un']
+      STYLESTITRES.interro  = STYLESTITRES['trois']
+      STYLESTITRES.TD       = STYLESTITRES['deux']
 
     end
 
@@ -349,7 +376,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ENVIRONNEMENTS DE COURS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
+
+% EnvironnementsUtilisateur() — Définit le rendu visuel des boîtes de cours
+%   (definition, propriete, methode…) et des environnements enonce/correction.
+%   Le code LaTeX stocké ici est injecté via tex.sprint() dans
+%   EnvironnementsDocument() (classe-tex3R.cls).
+%   Variables disponibles dans les chaînes : #1 = titre, #2 = couleur, \BODY.
+
 \begin{luacode*}
 function EnvironnementsUtilisateur()
 
@@ -406,6 +439,16 @@ function EnvironnementsUtilisateur()
   end
 end
 \end{luacode*}
+
+% mesParametres(str) — Raccourci : prérégle les variables globales Lua
+%   correspondant à un profil de document typique.
+%   Appelé avant \parametrage{} dans le document source.
+%   Exemple : Lua{ mesParametres('DS') }  -- équivaut à définir manuellement
+%             Type, Impression, Competence, Enonce, Stretch, Bareme.
+%
+% NiveauUtilisateur(arg) — Convertit "3", "4", "5" ou "6" en libellé
+%   formaté (ex. 6$^\text{ème}$) puis appelle NiveauDocument().
+%   Si arg est inconnu, NiveauDocument reçoit nil → mode personnalisé.
 
 \begin{luacode*}
   function mesParametres(str)
@@ -464,16 +507,16 @@ end
   end
 
   function NiveauUtilisateur(arg)
-    local str = nil
-    if arg == '6' then
-      str = '6$^\\text{ème}$'
-    elseif arg == '5' then
-      str = '5$^\\text{ème}$'
-    elseif arg == '4' then
-      str = '4$^\\text{ème}$'
-    elseif arg == '3' then
-      str = '3$^\\text{ème}$'
-    end
-    NiveauDocument(str)
+    -- Table de correspondance numéro → libellé formaté.
+    -- Ajouter ici les niveaux manquants (ex. lycée : '2nde', '1ere', 'Tle').
+    -- Si arg n'est pas dans la table, NiveauDocument reçoit nil
+    -- → \niveaucustomtrue : l'utilisateur fournit lui-même le libellé.
+    local niveaux = {
+      ['6'] = '6$^\\text{ème}$',
+      ['5'] = '5$^\\text{ème}$',
+      ['4'] = '4$^\\text{ème}$',
+      ['3'] = '3$^\\text{ème}$',
+    }
+    NiveauDocument(niveaux[arg])
   end
 \end{luacode*}
