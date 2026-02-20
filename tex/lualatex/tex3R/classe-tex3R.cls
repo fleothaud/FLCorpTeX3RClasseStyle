@@ -27,6 +27,7 @@
 
 %Formatage de la page et du texte
 \RequirePackage{geometry}
+\RequirePackage{lastpage}
 \RequirePackage{silence}
 \RequirePackage[np]{numprint}
 
