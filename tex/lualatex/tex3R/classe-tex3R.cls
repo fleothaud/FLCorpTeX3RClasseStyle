@@ -84,6 +84,7 @@
 
 \RequirePackage{tkz-fct,tkz-tab}
 \RequirePackage[lua]{tkz-euclide}
+\RequirePackage{OutilsGeomTikz}
 
 \RequirePackage{amsmath}
 \RequirePackage{amsfonts}
@@ -932,7 +933,7 @@ end
       tex.sprint([[\RenewEnviron{exemple}[1][Exemple]{\formatEnvCours[#1]{couleurexemple}}]])
       tex.sprint([[\RenewEnviron{methode}[1][Méthode]{\formatEnvCours[#1]{couleurmethode}}]])
       tex.sprint([[\RenewEnviron{preuve}[1][Preuve]{\formatEnvCours[#1]{couleurpreuve}}]])
-      tex.sprint([[\RenewEnviron{propriete}[1][Propriété (admise)]{\formatEnvCours[#1]{couleurpropriete}}]])
+      tex.sprint([[\RenewEnviron{propriete}[1][Propriété]{\formatEnvCours[#1]{couleurpropriete}}]])
       tex.sprint([[\RenewEnviron{remarque}[1][Remarque]{\formatEnvCours[#1]{couleurremarque}}]])
     end
 
