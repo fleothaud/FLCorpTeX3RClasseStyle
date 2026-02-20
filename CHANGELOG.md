@@ -5,7 +5,20 @@
 - Ajout du fichier `flashcards-tex3R.sty`
 - Modification du template Année complète
 - Fix de `\montitre` en mode diapo
-- 
+- Ajout du package `lastpage`
+- **Refactorisation et documentation du code** (`classe-tex3R.cls` et `style-tex3R.sty`) :
+  - En-têtes de fichier décrivant l'architecture et l'ordre d'appel des fonctions
+  - Commentaires Lua sur chaque fonction expliquant son rôle, ses entrées/sorties
+  - Commentaires sur les tables Lua globales (`PARAMETRES`, `PAGE`, `POLICE`…)
+  - Découpage des grands `tex.sprint` de `FormatDocument()` et `CouleursDocument()` en blocs thématiques lisibles
+  - Découpage des lignes de ~300 caractères dans `EnvironnementsDocument()` en sprints multi-lignes avec variables locales
+  - Refactorisation de `ParametrageDocument()` : helper local `defaut(val, def)` remplaçant 11 blocs `if nil`
+  - Fusion du bloc dupliqué fiche/diapo dans `StylesTitresUtilisateur()` (les deux branches étaient identiques)
+  - Simplification de `NiveauUtilisateur()` : table Lua `niveaux[arg]` remplaçant 4 `if/elseif`
+  - Suppression des `print()` de debug oubliés dans `VerificationVisible()`
+  - Suppression du doublon `\colorlet{bleu}` dans `CouleursDocument()`
+
+
 
 ## [3.2.8] - 12/02/24
 
