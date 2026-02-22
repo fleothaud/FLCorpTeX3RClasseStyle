@@ -410,8 +410,8 @@ function EnvironnementsUtilisateur()
       ]]
 
     ENVIRONNEMENTS.enonce = [[
-      \iftheme
-        \hfill{\itshape\footnotesize\contenutheme}\par\vspace{0.2em}{\color{couleurenonce}\hrule height 2pt}\par
+      \ifcompetence
+        \hfill{\itshape\footnotesize\contenucompetence}\par\vspace{0.2em}{\color{couleurenonce}\hrule height 2pt}\par
       \fi
       \colorbox{couleurenonce}{\textcolor{white}{
         {
@@ -419,7 +419,7 @@ function EnvironnementsUtilisateur()
         \ifdifficulte{~\raisebox{0.2em}{\scriptsize\contenudifficulte}}\fi
         }
       }
-      \ifcompetence\hspace{0.3em}\textcolor{couleurenonce}{\underLine{\large\raisebox{0.1em}{\contenucompetence}}}\fi\ifbareme\hfill {\bfseries/\contenubareme~points}\fi\par
+      \iftheme\hspace{0.3em}\textcolor{couleurenonce}{\underLine{\large\raisebox{0.1em}{\contenutheme}}}\fi\ifbareme\hfill {\bfseries/\contenubareme~points}\fi\par
         \medskip
         \BODY
         \ifsource\par

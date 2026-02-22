@@ -526,8 +526,14 @@ end
 \newcommand{\sautfiche}{\iffiche \newpage \fi}
 \newcommand{\saut}[1]{\directlua{SautLua("#1")}}
 
-\newcommand{\structureetoile}[1]{}
-\newcommand{\structurenormal}[1]{}
+% \structure{titre}  — invisible dans le document, mais ajoute "titre" à la TOC
+%                     (niveau subsubsection, après les enonce/correction).
+% \structure*{titre} — identique mais SANS entrée dans la TOC.
+\newcommand{\structurenormal}[1]{%
+  \phantomsection%
+  \addcontentsline{toc}{subsubsection}{#1}%
+}
+\newcommand{\structureetoile}[1]{}% étoile : aucun ajout à la structure
 
 \makeatletter
 \def\structure{\@ifstar\structureetoile\structurenormal}
@@ -544,12 +550,16 @@ end
 \newcommand{\contenusource}{}
 \newcommand{\contenutheme}{}
 
-\newcommand{\Com}{Communiquer}
-\newcommand{\Cal}{Calculer}
-\newcommand{\Rep}{Représenter}
-\newcommand{\Mod}{Modéliser}
-\newcommand{\Rai}{Raisonner}
-\newcommand{\Che}{Chercher}
+% Commandes de compétences — affichent l'abréviation cerclée (3 lettres).
+% Usage : \competence{\Cal \Rai}  →  ⊙Cal⊙ ⊙Rai⊙
+% \Circled{} (TikZ) absorbe l'espace inter-mots ; \hspace{0.3em} rétablit
+% un espacement visible entre deux compétences consécutives.
+\newcommand{\Com}{\Circled{Com}\hspace{0.3em}}% Communiquer
+\newcommand{\Cal}{\Circled{Cal}\hspace{0.3em}}% Calculer
+\newcommand{\Rep}{\Circled{Rep}\hspace{0.3em}}% Représenter
+\newcommand{\Mod}{\Circled{Mod}\hspace{0.3em}}% Modéliser
+\newcommand{\Rai}{\Circled{Rai}\hspace{0.3em}}% Raisonner
+\newcommand{\Che}{\Circled{Che}\hspace{0.3em}}% Chercher
 
 \begin{luacode}
   -- DifficulteLua(n) — Affiche n étoiles FontAwesome pour indiquer la difficulté.
