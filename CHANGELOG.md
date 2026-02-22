@@ -1,4 +1,12 @@
 # Changelog
+## [3.4.1] - 22/02/2026
+- Fix `\structure` / `\structure*` : `\structurenormal` ajoute désormais une entrée dans la TOC (`\phantomsection` + `\addcontentsline`) ; la version étoilée reste silencieuse.
+- Inversion compétence/thème dans l'environnement `enonce` : la compétence s'affiche en haut (italique), le thème à côté du numéro (souligné).
+- Commandes `\Com`, `\Cal`, `\Rep`, `\Mod`, `\Rai`, `\Che` redéfinies en abréviations cerclées via `\Circled{}` (package `circledsteps`) avec `\hspace{0.3em}` pour espacer les compétences consécutives.
+- Environnements de cours (`definition`, `propriete`…) : le paramètre optionnel est désormais utilisé tel quel (sans deux-points ajouté automatiquement). Le deux-points figure dans le nom par défaut. Ex : `\begin{definition}[Titre]` → *Titre* ; `\begin{definition}[Titre :]` → *Titre :*.
+- Fix couleurs `marron` et `violet` : `\colorlet{marron}` et `\colorlet{violet}` n'étaient pas émis par `CouleursDocument()` malgré leur présence dans la table `COULEURS`.
+- Suppression de l'avertissement non bloquant *No `datatool' support for dialect `french'* via `\WarningFilter{tracklang}{...}`.
+
 ## [3.4.0] - 20/02/2026
 - Ajout du package `lastpage`
 - **Refactorisation et documentation du code** (`classe-tex3R.cls` et `style-tex3R.sty`) :

@@ -61,6 +61,7 @@
 \RequirePackage{geometry}
 \RequirePackage{lastpage}
 \RequirePackage{silence}
+\WarningFilter{tracklang}{No `datatool' support}
 \RequirePackage[np]{numprint}
 
 \RequirePackage{pstricks}
@@ -775,13 +776,15 @@ end
       '\\colorlet{couleurcorrection}{'  .. FormatageString(COULEURS.correction)  .. '}'
     )
 
-    -- Surlignage et couleurs sémantiques (rouge, bleu, vert)
+    -- Surlignage et couleurs sémantiques (rouge, bleu, vert, marron, violet)
     tex.sprint(
-      '\\colorlet{couleursurligne}{'       .. FormatageString(COULEURS.surligne)       .. '}' ..
+      '\\colorlet{couleursurligne}{'        .. FormatageString(COULEURS.surligne)       .. '}' ..
       '\\colorlet{couleursurlignevisible}{' .. FormatageString(COULEURS.surlignevisible).. '}' ..
-      '\\colorlet{rouge}{'                 .. FormatageString(COULEURS.rouge)          .. '}' ..
-      '\\colorlet{bleu}{'                  .. FormatageString(COULEURS.bleu)           .. '}' ..
-      '\\colorlet{vert}{'                  .. FormatageString(COULEURS.vert)           .. '}'
+      '\\colorlet{rouge}{'                  .. FormatageString(COULEURS.rouge)          .. '}' ..
+      '\\colorlet{bleu}{'                   .. FormatageString(COULEURS.bleu)           .. '}' ..
+      '\\colorlet{vert}{'                   .. FormatageString(COULEURS.vert)           .. '}' ..
+      '\\colorlet{marron}{'                 .. FormatageString(COULEURS.marron)         .. '}' ..
+      '\\colorlet{violet}{'                 .. FormatageString(COULEURS.violet)         .. '}'
     )
 
     tex.sprint('\\sethlcolor{couleursurligne}')
@@ -1035,21 +1038,26 @@ end
 
       tex.sprint('\\renewcommand{\\formatEnvCours}[2][]{\\ifstretch\\vfill\\fi'..  FormatageString(ENVIRONNEMENTS.formatcours) ..'}')
 
-      tex.sprint([[\RenewEnviron{application}[1][Application]{\formatEnvCours[#1]{couleurapplication}}]])
-      tex.sprint([[\RenewEnviron{definition}[1][Définition]{\formatEnvCours[#1]{couleurdefinition}}]])
-      tex.sprint([[\RenewEnviron{convention}[1][Convention]{\formatEnvCours[#1]{couleurconvention}}]])
-      tex.sprint([[\RenewEnviron{exemple}[1][Exemple]{\formatEnvCours[#1]{couleurexemple}}]])
-      tex.sprint([[\RenewEnviron{methode}[1][Méthode]{\formatEnvCours[#1]{couleurmethode}}]])
-      tex.sprint([[\RenewEnviron{preuve}[1][Preuve]{\formatEnvCours[#1]{couleurpreuve}}]])
-      tex.sprint([[\RenewEnviron{propriete}[1][Propriété]{\formatEnvCours[#1]{couleurpropriete}}]])
-      tex.sprint([[\RenewEnviron{remarque}[1][Remarque]{\formatEnvCours[#1]{couleurremarque}}]])
+      -- Le deux-points fait partie des noms par défaut.
+      -- Avec un argument optionnel, le titre est utilisé tel quel (sans deux-points ajouté).
+      -- Ex : \begin{definition}           → "Définition :"
+      --      \begin{definition}[Titre]    → "Titre"
+      --      \begin{definition}[Titre :]  → "Titre :"
+      tex.sprint([[\RenewEnviron{application}[1][Application :]{\formatEnvCours[#1]{couleurapplication}}]])
+      tex.sprint([[\RenewEnviron{definition}[1][Définition :]{\formatEnvCours[#1]{couleurdefinition}}]])
+      tex.sprint([[\RenewEnviron{convention}[1][Convention :]{\formatEnvCours[#1]{couleurconvention}}]])
+      tex.sprint([[\RenewEnviron{exemple}[1][Exemple :]{\formatEnvCours[#1]{couleurexemple}}]])
+      tex.sprint([[\RenewEnviron{methode}[1][Méthode :]{\formatEnvCours[#1]{couleurmethode}}]])
+      tex.sprint([[\RenewEnviron{preuve}[1][Preuve :]{\formatEnvCours[#1]{couleurpreuve}}]])
+      tex.sprint([[\RenewEnviron{propriete}[1][Propriété :]{\formatEnvCours[#1]{couleurpropriete}}]])
+      tex.sprint([[\RenewEnviron{remarque}[1][Remarque :]{\formatEnvCours[#1]{couleurremarque}}]])
     end
 
     if TYPE == 'cours' then
 
-        tex.sprint([[\RenewEnviron{enonce}[1][Énoncé]{\formatEnvCours[#1]{couleurenonce}}]])
+        tex.sprint([[\RenewEnviron{enonce}[1][Énoncé :]{\formatEnvCours[#1]{couleurenonce}}]])
 
-        tex.sprint([[\RenewEnviron{correction}[1][Correction]{\formatEnvCours[#1]{couleurcorrection}}]])
+        tex.sprint([[\RenewEnviron{correction}[1][Correction :]{\formatEnvCours[#1]{couleurcorrection}}]])
 
       else
 
